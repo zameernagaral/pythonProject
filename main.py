@@ -1,8 +1,8 @@
 from fetch_news import get_news
 from ui import display_news
 
-category = input("Enter category (technology/sports/business): ")
+query = input("What news are you interested in?: ")
 
-articles = get_news(category)
+articles = get_news(query)
 
 display_news(articles)
