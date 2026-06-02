@@ -1,0 +1,23 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# Bookmarks data (auto-generated)
+bookmarks.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store

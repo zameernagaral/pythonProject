@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="News Aggregator — Search and bookmark the latest news from around the world. Powered by NewsAPI.">
+    <title>NewsFlow — Your Personalized News Aggregator</title>
+
+    <!-- Google Fonts: Inter for body, Outfit for headings -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- ================================================================== -->
+    <!-- NAVBAR                                                             -->
+    <!-- ================================================================== -->
+    <nav class="navbar" id="navbar">
+        <div class="navbar__brand">
+            <span class="navbar__logo">📰</span>
+            <span class="navbar__title">News<span class="accent">Flow</span></span>
+        </div>
+        <div class="navbar__actions">
+            <button class="btn btn--ghost" id="bookmarks-toggle" aria-label="Open bookmarks">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>Bookmarks</span>
+                <span class="badge" id="bookmark-count">0</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ================================================================== -->
+    <!-- HERO SECTION — Search Bar                                          -->
+    <!-- ================================================================== -->
+    <header class="hero" id="hero">
+        <div class="hero__content">
+            <h1 class="hero__title">
+                Discover the <span class="gradient-text">Latest News</span>
+            </h1>
+            <p class="hero__subtitle">
+                Search thousands of articles from top sources worldwide
+            </p>
+
+            <!-- Search Form -->
+            <form class="search-form" id="search-form" autocomplete="off">
+                <div class="search-form__input-wrapper">
+                    <svg class="search-form__icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.3-4.3"/>
+                    </svg>
+                    <input
+                        type="text"
+                        id="search-input"
+                        class="search-form__input"
+                        placeholder="Search for any topic… e.g. Technology, Space, Sports"
+                        required
+                        autofocus
+                    >
+                    <button type="submit" class="btn btn--primary search-form__btn" id="search-btn">
+                        Search
+                    </button>
+                </div>
+
+                <!-- Sort & Filter Row -->
+                <div class="search-form__filters">
+                    <label class="filter-label" for="sort-select">Sort by:</label>
+                    <select id="sort-select" class="filter-select">
+                        <option value="popularity">🔥 Popularity</option>
+                        <option value="publishedAt">🕐 Newest First</option>
+                        <option value="relevancy">🎯 Relevance</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <!-- Animated background orbs -->
+        <div class="hero__orb hero__orb--1" aria-hidden="true"></div>
+        <div class="hero__orb hero__orb--2" aria-hidden="true"></div>
+        <div class="hero__orb hero__orb--3" aria-hidden="true"></div>
+    </header>
+
+    <!-- ================================================================== -->
+    <!-- MAIN CONTENT — Results Area                                        -->
+    <!-- ================================================================== -->
+    <main class="main" id="main">
+
+        <!-- Results Header (shown after search) -->
+        <div class="results-header" id="results-header" style="display: none;">
+            <h2 class="results-header__title" id="results-title">Results</h2>
+            <p class="results-header__count" id="results-count"></p>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error-message" id="error-message" style="display: none;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="m15 9-6 6M9 9l6 6"/>
+            </svg>
+            <p id="error-text">Something went wrong</p>
+            <button class="btn btn--ghost" id="retry-btn">Try Again</button>
+        </div>
+
+        <!-- Skeleton Loader (shown while loading) -->
+        <div class="articles-grid" id="skeleton-grid" style="display: none;">
+            <div class="card card--skeleton"><div class="skeleton skeleton--img"></div><div class="skeleton skeleton--title"></div><div class="skeleton skeleton--text"></div><div class="skeleton skeleton--text short"></div></div>
+            <div class="card card--skeleton"><div class="skeleton skeleton--img"></div><div class="skeleton skeleton--title"></div><div class="skeleton skeleton--text"></div><div class="skeleton skeleton--text short"></div></div>
+            <div class="card card--skeleton"><div class="skeleton skeleton--img"></div><div class="skeleton skeleton--title"></div><div class="skeleton skeleton--text"></div><div class="skeleton skeleton--text short"></div></div>
+            <div class="card card--skeleton"><div class="skeleton skeleton--img"></div><div class="skeleton skeleton--title"></div><div class="skeleton skeleton--text"></div><div class="skeleton skeleton--text short"></div></div>
+            <div class="card card--skeleton"><div class="skeleton skeleton--img"></div><div class="skeleton skeleton--title"></div><div class="skeleton skeleton--text"></div><div class="skeleton skeleton--text short"></div></div>
+            <div class="card card--skeleton"><div class="skeleton skeleton--img"></div><div class="skeleton skeleton--title"></div><div class="skeleton skeleton--text"></div><div class="skeleton skeleton--text short"></div></div>
+        </div>
+
+        <!-- Articles Grid (populated by JS) -->
+        <div class="articles-grid" id="articles-grid"></div>
+
+        <!-- Load More Button -->
+        <div class="load-more-wrapper" id="load-more-wrapper" style="display: none;">
+            <button class="btn btn--outline" id="load-more-btn">
+                Load More Articles
+            </button>
+        </div>
+
+        <!-- Empty State (initial) -->
+        <div class="empty-state" id="empty-state">
+            <div class="empty-state__icon">🌍</div>
+            <h3>What's happening in the world?</h3>
+            <p>Type a topic above to discover the latest news</p>
+        </div>
+
+    </main>
+
+    <!-- ================================================================== -->
+    <!-- BOOKMARKS DRAWER (Slide-in Sidebar)                                -->
+    <!-- ================================================================== -->
+    <div class="drawer-overlay" id="drawer-overlay"></div>
+    <aside class="drawer" id="bookmarks-drawer" aria-label="Bookmarks">
+        <div class="drawer__header">
+            <h2 class="drawer__title">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+                Saved Articles
+            </h2>
+            <button class="btn btn--icon" id="drawer-close" aria-label="Close bookmarks">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m18 6-12 12M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="drawer__content" id="bookmarks-list">
+            <!-- Bookmarks will be rendered here by JS -->
+        </div>
+        <div class="drawer__empty" id="bookmarks-empty">
+            <span class="drawer__empty-icon">📑</span>
+            <p>No bookmarks yet</p>
+            <small>Click the bookmark icon on any article to save it</small>
+        </div>
+    </aside>
+
+    <!-- ================================================================== -->
+    <!-- TOAST NOTIFICATIONS                                                -->
+    <!-- ================================================================== -->
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+    <!-- ================================================================== -->
+    <!-- FOOTER                                                             -->
+    <!-- ================================================================== -->
+    <footer class="footer">
+        <p>Powered by <a href="https://newsapi.org" target="_blank" rel="noopener">NewsAPI</a> · Built with Flask & ❤️</p>
+    </footer>
+
+    <!-- Main Application Script -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
