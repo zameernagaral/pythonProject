@@ -16,7 +16,7 @@ def get_news(query):
     
     params = {
         "q": query,
-        "sortby": "relevance",
+        "sortby": "publishedAt",
         "apikey": api_key,
         "lang": "en"
     }

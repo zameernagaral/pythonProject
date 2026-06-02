@@ -42,9 +42,12 @@ def get_news(query: str, sort_by: str = "relevance", page: int = 1, page_size: i
             "articles": [],
         }
 
-    # Map sort_by parameter just in case it is "popularity" or "relevancy" (from old client code)
-    if sort_by in ("popularity", "relevancy"):
-        sort_by = "relevance"
+    # GNews Free Tier Limitation:
+    # Sorting by "relevance" ranks articles of all time. Since the Free plan restricts
+    # access to articles newer than 30 days, sorting by relevance results in GNews returning
+    # 0 articles (as the top relevant articles are older than 30 days and get stripped by their server).
+    # To ensure the user always gets results, we force sorting by "publishedAt" (Newest First).
+    sort_by = "publishedAt"
 
     params = {
         "q": query,
