@@ -46,7 +46,7 @@
     // APPLICATION STATE
     // --------------------------------------------------------
     let currentQuery   = "";
-    let currentSort    = "popularity";
+    let currentSort    = "relevance";
     let currentPage    = 1;
     let totalResults   = 0;
     let allArticles    = [];        // Accumulated articles from all pages

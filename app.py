@@ -66,7 +66,7 @@ def api_news():
             "articles": [],
         }), 400
 
-    sort_by = request.args.get("sort", "popularity")
+    sort_by = request.args.get("sort", "relevance")
     page = request.args.get("page", 1, type=int)
 
     result = get_news(query=query, sort_by=sort_by, page=page)
