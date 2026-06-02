@@ -7,7 +7,7 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python -m gunicorn app:app
     envVars:
-      - key: NEWSAPI_KEY
+      - key: GNEWS_API_KEY
         sync: false  # You'll set this manually in the Render dashboard
       - key: PYTHON_VERSION
         value: "3.11.9"
