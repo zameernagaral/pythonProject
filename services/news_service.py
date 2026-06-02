@@ -1,9 +1,10 @@
 """
-News Service — Fetches articles from NewsAPI.org
+News Service — Fetches articles from GNews API (gnews.io)
 
-Refactored from the original fetch_news.py CLI script.
-Now supports pagination, sorting, and proper error handling
-for use as a web API backend.
+Switched from NewsAPI.org (localhost-only on free tier) to GNews API
+which allows production deployment on the free plan.
+
+GNews Free Tier: 100 requests/day, works from any server.
 """
 
 import os
@@ -13,78 +14,93 @@ import requests
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-NEWSAPI_BASE_URL = "https://newsapi.org/v2/everything"
+GNEWS_BASE_URL = "https://gnews.io/api/v4/search"
 DEFAULT_PAGE_SIZE = 12  # Number of articles per page
 
 
-def get_news(query: str, sort_by: str = "popularity", page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> dict:
+def get_news(query: str, sort_by: str = "relevance", page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> dict:
     """
-    Fetch news articles from NewsAPI.
+    Fetch news articles from GNews API.
 
     Args:
         query:     Search keyword(s), e.g. "technology"
-        sort_by:   One of "relevancy", "popularity", "publishedAt"
+        sort_by:   One of "relevance", "publishedAt"
         page:      Page number (1-indexed)
         page_size: Number of results per page (max 100 on free tier)
 
     Returns:
         dict with keys: status, totalResults, articles, error (if any)
     """
-    api_key = os.getenv("NEWSAPI_KEY")
+    api_key = os.getenv("GNEWS_API_KEY")
 
     if not api_key:
         return {
             "status": "error",
-            "error": "NEWSAPI_KEY environment variable is not set. "
+            "error": "GNEWS_API_KEY environment variable is not set. "
                      "Please add it to your .env file.",
             "totalResults": 0,
             "articles": [],
         }
 
+    # Map sort_by parameter just in case it is "popularity" or "relevancy" (from old client code)
+    if sort_by in ("popularity", "relevancy"):
+        sort_by = "relevance"
+
     params = {
         "q": query,
-        "sortBy": sort_by,
+        "sortby": sort_by,
         "page": page,
-        "pageSize": page_size,
-        "apiKey": api_key,
+        "max": page_size,
+        "apikey": api_key,
+        "lang": "en",
     }
 
     try:
-        response = requests.get(NEWSAPI_BASE_URL, params=params, timeout=10)
+        response = requests.get(GNEWS_BASE_URL, params=params, timeout=10)
         data = response.json()
 
-        # NewsAPI returns status "ok" on success
-        if data.get("status") != "ok":
+        # GNews returns a dictionary with 'errors' key on failure
+        if "errors" in data:
+            errors = data.get("errors")
+            if isinstance(errors, list):
+                err_msg = ", ".join(errors)
+            elif isinstance(errors, dict):
+                err_msg = ", ".join([f"{k}: {v}" for k, v in errors.items()])
+            else:
+                err_msg = str(errors)
+
             return {
                 "status": "error",
-                "error": data.get("message", "Unknown error from NewsAPI"),
+                "error": f"Error from GNews API: {err_msg}",
                 "totalResults": 0,
                 "articles": [],
             }
 
-        # Clean up articles — some fields can be None
+        # Clean up articles and map GNews format to NewsAPI-compatible format
+        # GNews uses 'image' instead of 'urlToImage'
+        # GNews uses 'totalArticles' instead of 'totalResults'
         articles = []
         for article in data.get("articles", []):
             articles.append({
                 "title": article.get("title") or "Untitled",
                 "description": article.get("description") or "",
                 "url": article.get("url") or "#",
-                "urlToImage": article.get("urlToImage") or "",
+                "urlToImage": article.get("image") or "",
                 "source": (article.get("source") or {}).get("name", "Unknown"),
-                "author": article.get("author") or "Unknown",
+                "author": "Unknown",  # GNews doesn't provide author field
                 "publishedAt": article.get("publishedAt") or "",
             })
 
         return {
             "status": "ok",
-            "totalResults": data.get("totalResults", 0),
+            "totalResults": data.get("totalArticles", 0),
             "articles": articles,
         }
 
     except requests.exceptions.Timeout:
         return {
             "status": "error",
-            "error": "Request to NewsAPI timed out. Please try again.",
+            "error": "Request to GNews API timed out. Please try again.",
             "totalResults": 0,
             "articles": [],
         }
